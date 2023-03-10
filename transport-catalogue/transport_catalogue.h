@@ -25,6 +25,7 @@ namespace transport_catalogue {
     struct Bus {
         std::string name;
         std::deque<Stop *> stops;
+        int route_length;
     };
 
 
@@ -68,7 +69,7 @@ namespace transport_catalogue {
 
         void AddStop(std::string name, geo::Coordinates coordinates);
 
-        void AddBus(std::string name, bool annular, const std::vector<std::string> &stops);
+        void AddBus(const std::string& name, bool annular, const std::vector<std::string> &stops);
 
         void AddStopDistances(std::string_view name, const std::vector<std::pair<std::string, int>> &distances);
 

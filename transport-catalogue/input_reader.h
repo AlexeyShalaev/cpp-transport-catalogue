@@ -45,7 +45,8 @@ namespace input_reader {
     };
 
 
-    std::vector<std::pair<std::string, std::string>> QueriesToDataBase(TransportCatalogue &db);
+    std::vector<std::pair<std::string, std::string>>
+    QueriesToDataBase(TransportCatalogue &db, std::istream &input_stream = std::cin);
 
     bool IsIntNumber(std::string_view symbols);
 
@@ -55,7 +56,7 @@ namespace input_reader {
 
     void Split(std::string_view line, char delimiter, std::vector<std::string> &tokens, bool trimmed = false);
 
-    std::string ReadLine();
+    std::string ReadLine(std::istream &input_stream = std::cin);
 
-    int ReadLineWithNumber();
+    int ReadLineWithNumber(std::istream &input_stream = std::cin);
 }

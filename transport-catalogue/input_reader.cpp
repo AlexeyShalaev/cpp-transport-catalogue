@@ -8,13 +8,13 @@ using namespace transport_catalogue;
 namespace input_reader {
     const string_view WHITESPACE = " \f\n\r\t\v"sv;
 
-    vector <pair<string, string>> QueriesToDataBase(TransportCatalogue &db) {
-        auto queries_length = ReadLineWithNumber();
+    vector <pair<string, string>> QueriesToDataBase(TransportCatalogue &db, istream& input) {
+        auto queries_length = ReadLineWithNumber(input);
         string query;
         deque<StopQuery> stop_queries;
         deque<BusQuery> bus_queries;
         for (int i = 0; i < queries_length; ++i) {
-            query = Trim(ReadLine());
+            query = Trim(ReadLine(input));
             if (query.empty()) continue;
             if (query.find(':') != std::string::npos) {
                 auto tokens = Split(query, ':');
@@ -53,9 +53,9 @@ namespace input_reader {
         }
 
         vector<pair<string, string>> info_queries;
-        queries_length = ReadLineWithNumber();
+        queries_length = ReadLineWithNumber(input);
         for (int i = 0; i < queries_length; ++i) {
-            query = ReadLine();
+            query = ReadLine(input);
             auto pos = query.find(' ');
             if (pos == std::string::npos) {
                 info_queries.emplace_back(query, "");
@@ -131,16 +131,16 @@ namespace input_reader {
         }
     }
 
-    string ReadLine() {
+    string ReadLine(istream& input) {
         string s;
-        getline(cin, s);
+        getline(input, s);
         return s;
     }
 
-    int ReadLineWithNumber() {
+    int ReadLineWithNumber(istream& input) {
         int result;
-        cin >> result;
-        ReadLine();
+        input >> result;
+        ReadLine(input);
         return result;
     }
 }

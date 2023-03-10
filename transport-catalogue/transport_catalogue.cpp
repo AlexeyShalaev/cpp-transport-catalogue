@@ -20,7 +20,7 @@ namespace transport_catalogue {
         }
     }
 
-    void TransportCatalogue::AddBus(string name, bool annular, const vector <string> &stops) {
+    void TransportCatalogue::AddBus(const string &name, bool annular, const vector <string> &stops) {
         Bus bus;
         for (auto &stop: stops) {
             if (stops_map_.count(stop) == 0) throw std::invalid_argument("Invalid Stop in Bus");
@@ -31,9 +31,10 @@ namespace transport_catalogue {
                 bus.stops.push_back(stops_map_.at(*it));
             }
         }
-        bus.name = std::move(name);
+        bus.name = name;
         buses_.push_back(bus);
         buses_map_[buses_.back().name] = &buses_.back();
+        buses_map_[buses_.back().name]->route_length = RouteLength(name);;
         InsertBusesToStop(&buses_.back());
     }
 
@@ -121,11 +122,12 @@ namespace transport_catalogue {
         int length = 0;
         double curvature = 0.0;
         if (buses_map_.count(name) > 0) {
-            const auto &stops = buses_map_.at(name)->stops;
+            const auto &bus = buses_map_.at(name);
+            const auto &stops = bus->stops;
             route_stops = stops.size();
             std::unordered_set<Stop *> tmp_stops = {stops.begin(), stops.end()};
             unique_stops = tmp_stops.size();
-            length = RouteLength(name);
+            length = bus->route_length;
             curvature = length / RouteGeoLength(name);
         }
         return {string(name), route_stops, unique_stops, length, curvature};

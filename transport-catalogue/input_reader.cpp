@@ -3,7 +3,8 @@
 using namespace std;
 using namespace string_view_literals;
 
-using namespace transport_catalogue;
+using namespace transport::catalogue;
+using namespace transport::domains;
 
 namespace input_reader {
     const string_view WHITESPACE = " \f\n\r\t\v"sv;

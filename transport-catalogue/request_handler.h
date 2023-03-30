@@ -3,6 +3,7 @@
 #include "domain.h"
 #include "transport_catalogue.h"
 
+#include <future>
 #include <map>
 
 namespace transport::interfaces {
@@ -52,30 +53,23 @@ namespace transport::handlers {
         void ExecuteQueries(const std::deque<transport::domains::StopQuery> &stopQueries,
                             const std::deque<transport::domains::BusQuery> &busQueries);
 
-        void ExecuteQueriesAsync(const std::deque<transport::domains::StopQuery> &stopQueries,
-                                 const std::deque<transport::domains::BusQuery> &busQueries);
+        std::future<void> ExecuteQueriesAsync(const std::deque<transport::domains::StopQuery> &stopQueries,
+                                              const std::deque<transport::domains::BusQuery> &busQueries);
 
         std::string
         ExecuteStats(const std::deque<transport::domains::StatRequest> &statRequests,
                      const interfaces::IReader &reader);
 
-        std::string
+
+        std::future<std::string>
         ExecuteStatsAsync(const std::deque<transport::domains::StatRequest> &statRequests,
                           const interfaces::IReader &reader);
 
-        struct GetCoordinateStops {
-            std::vector<geo::Coordinates> coordinate;
-            std::vector<std::string> name;
-            std::map<std::string, geo::Coordinates> name_coord;
-
-            std::map<std::string, std::vector<std::pair<std::string, geo::Coordinates>>> polyline;
-            std::map<std::string, std::vector<std::pair<std::string, geo::Coordinates>>> name_route_inform;
-        };
-
-        static GetCoordinateStops GetStopsWithRoute(const transport::catalogue::TransportCatalogue &catalogue);
+        static renderer::GetCoordinateStops
+        GetStopsWithRoute(const transport::catalogue::TransportCatalogue &catalogue);
 
         static std::string RenderMap(const transport::catalogue::TransportCatalogue &catalogue,
-                                     renderer::MapRenderer::RenderSettings renderSettings = {});
+                                     renderer::MapRenderer::RenderSettings renderSettings);
 
 
     private:

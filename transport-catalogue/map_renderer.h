@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "svg.h"
 #include "geo.h"
@@ -11,6 +12,15 @@ namespace renderer {
         inline const double EPSILON = 1e-6;
         bool IsZero(double value);
     }
+
+    struct GetCoordinateStops {
+        std::vector<geo::Coordinates> coordinate;
+        std::vector<std::string> name;
+        std::map<std::string, geo::Coordinates> name_coord;
+
+        std::map<std::string, std::vector<std::pair<std::string, geo::Coordinates>>> polyline;
+        std::map<std::string, std::vector<std::pair<std::string, geo::Coordinates>>> name_route_inform;
+    };
 
     class MapRenderer {
     public:
@@ -32,7 +42,7 @@ namespace renderer {
         explicit MapRenderer() = default;
         explicit MapRenderer(RenderSettings renderSettings);
 
-        void Render(const svg::Document& doc, std::ostream& output);
+        void Render(const GetCoordinateStops& get_inform, std::ostream& output);
 
     protected:
         RenderSettings renderSettings_;

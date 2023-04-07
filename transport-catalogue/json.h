@@ -3,131 +3,88 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <initializer_list>
 #include <vector>
 #include <variant>
-#include <stdexcept>
-#include <cassert>
-#include <algorithm>
 
 namespace json {
 
     class Node;
-// Сохраните объявления Dict и Array без изменения
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
+    using Data = std::variant<std::nullptr_t, Array, Dict, int, double, bool, std::string >;
 
-// Эта ошибка должна выбрасываться при ошибках парсинга JSON
     class ParsingError : public std::runtime_error {
     public:
         using runtime_error::runtime_error;
     };
 
-    using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
-
-    class Node final : private Value {
+    class Node {
     public:
-        using variant::variant;
-
-        Node(Value value);
-
-        bool IsInt() const;
-
-        bool IsDouble() const;
-
-        bool IsPureDouble() const;
-
-        bool IsBool() const;
-
-        bool IsString() const;
-
-        bool IsNull() const;
-
-        bool IsArray() const;
-
-        bool IsDict() const;
-
-        bool IsMap() const;
-
-        const Array &AsArray() const;
-
-        const Dict &AsDict() const;
-
-        const Dict &AsMap() const;
-
-        int AsInt() const;
+        Node() = default;
+        Node(std::nullptr_t) {}
+        Node(bool val);
+        Node(int val);
+        Node(double val);
+        Node(std::string val);
+        Node(Array array);
+        Node(Dict map);
 
         bool AsBool() const;
-
+        int AsInt() const;
         double AsDouble() const;
+        const std::string& AsString() const;
+        const Array& AsArray() const;
+        const Dict& AsMap() const;
 
-        const std::string &AsString() const;
+        bool IsNull() const;
+        bool IsBool() const;
+        bool IsInt() const;
+        bool IsDouble() const;
+        bool IsPureDouble() const;
+        bool IsString() const;
+        bool IsArray() const;
+        bool IsMap() const;
 
-        const Value &GetValue() const;
+        bool operator==(const Node& other) const;
+        bool operator!=(const Node& other) const;
 
-        Value &GetValue();
+        void Print(std::ostream& out) const;
 
-        bool operator==(const Node &other) const;
+    private:
+        Data value_;
 
-        bool operator!=(const Node &other) const;
+        struct Printer {
+            std::ostream& output;
+
+            void operator()(std::nullptr_t) const;
+            void operator()(const Array& value) const;
+            void operator()(const Dict& value) const;
+            void operator()(const bool value) const;
+            void operator()(const int value) const;
+            void operator()(const double value) const;
+            void operator()(const std::string_view value) const;
+        };
     };
 
     class Document {
     public:
         explicit Document(Node root);
 
-        const Node &GetRoot() const;
+        const Node& GetRoot() const;
 
-        bool operator==(const json::Document &other) const;
-
-        bool operator!=(const json::Document &other) const;
+        bool operator==(const Document& other) const {
+            return root_ == other.root_;
+        }
+        bool operator!=(const Document& other) const {
+            return root_ != other.root_;
+        }
 
     private:
         Node root_;
     };
 
-    Document Load(std::istream &input);
+    Document Load(std::istream& input);
 
-    struct PrintContext {
-        std::ostream &out;
-        int indent_step = 4;
-        int indent = 0;
-
-        void PrintIndent() const {
-            for (int i = 0; i < indent; ++i) {
-                out.put(' ');
-            }
-        }
-
-        // Возвращает новый контекст вывода с увеличенным смещением
-        PrintContext Indented(int offset = 0) const {
-            return {out, indent_step, indent_step + indent + offset};
-        }
-    };
-
-    namespace detail {
-
-// Шаблон, подходящий для вывода double и int
-        template<typename T>
-        void PrintValue(const T &value, const PrintContext &ctx) {
-            auto &out = ctx.out;
-            out << value;
-        }
-
-        void PrintNode(const Node &node, const PrintContext &ctx);
-
-
-        void PrintValue(std::nullptr_t, const PrintContext &ctx);
-
-        void PrintValue(bool value, const PrintContext &ctx);
-
-        void PrintValue(const Array &array, const PrintContext &ctx);
-
-        void PrintValue(const std::string &str, const PrintContext &ctx);
-
-        void PrintValue(const Dict &dict, const PrintContext &ctx);
-
-    } // namespace detail
-
-    void Print(const Document &doc, std::ostream &output);
-
-}  // namespace json
+    void Print(const Document& doc, std::ostream& output);
+}

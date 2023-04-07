@@ -27,46 +27,52 @@ std::string JsonReader::ConvertStatRequests(const transport::catalogue::Transpor
                                             const std::deque<transport::domains::StatRequest> &stats,
                                             renderer::MapRenderer::RenderSettings renderSettings) const {
     std::ostringstream result;
-    json::Array arr;
-    arr.reserve(stats.size());
+    json::Builder builder;
+    builder.StartArray();
 
     for (auto stat: stats) {
         if (stat.type == "Stop") {
             auto info = db.GetBusesByStop(stat.name);
             if (!info) {
-                json::Dict dict{{"request_id"s,    stat.id},
-                                {"error_message"s, "not found"s}};
-                arr.emplace_back(dict);
+                builder.StartDict()
+                        .Key("request_id"s).Value(stat.id)
+                        .Key("error_message"s).Value("not found"s)
+                        .EndDict();
             } else {
-                json::Array array_;
+                builder.StartDict()
+                        .Key("buses"s).StartArray();
                 for (const auto &bus: *info) {
-                    array_.push_back(bus->name);
+                    builder.Value(bus->name);
                 }
-                arr.emplace_back(json::Dict{{"buses"s,      array_},
-                                            {"request_id"s, stat.id}});
+                builder.EndArray();
+                builder.Key("request_id"s).Value(stat.id).EndDict();
             }
         } else if (stat.type == "Bus") {
             try {
                 auto info = db.GetBusInfo(stat.name);
-                arr.emplace_back(json::Dict{
-                        {"curvature"s,         info.curvature},
-                        {"request_id"s,        stat.id},
-                        {"route_length"s,      info.length},
-                        {"stop_count"s,        info.route_stops},
-                        {"unique_stop_count"s, info.unique_stops}});
+                builder.StartDict()
+                        .Key("curvature"s).Value(info.curvature)
+                        .Key("request_id"s).Value(stat.id)
+                        .Key("route_length"s).Value(info.length)
+                        .Key("stop_count"s).Value(info.route_stops)
+                        .Key("unique_stop_count"s).Value(info.unique_stops)
+                        .EndDict();
             } catch (std::invalid_argument &) {
-                json::Dict dict{{"request_id"s,    stat.id},
-                                {"error_message"s, "not found"s}};
-                arr.emplace_back(dict);
+                builder.StartDict()
+                        .Key("request_id"s).Value(stat.id)
+                        .Key("error_message"s).Value("not found"s)
+                        .EndDict();
             }
         } else if (stat.type == "Map") {
-            json::Dict dict{{"request_id"s, stat.id},
-                            {"map"s,        transport::handlers::RequestHandler::RenderMap(db, renderSettings)}};
-            arr.emplace_back(dict);
+            builder.StartDict()
+                    .Key("request_id"s).Value(stat.id)
+                    .Key("map"s).Value(transport::handlers::RequestHandler::RenderMap(db, renderSettings))
+                    .EndDict();
         }
     }
+    builder.EndArray();
 
-    json::Document doc(arr);
+    json::Document doc(builder.Build());
     json::Print(doc, result);
     return result.str();
 }

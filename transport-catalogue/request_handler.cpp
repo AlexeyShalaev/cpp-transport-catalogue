@@ -1,4 +1,5 @@
 #include <sstream>
+#include <utility>
 #include "request_handler.h"
 
 using namespace transport::handlers;
@@ -30,34 +31,18 @@ std::future<void> RequestHandler::ExecuteQueriesAsync(const std::deque<transport
     return std::async([&] {
         ExecuteQueries(stopQueries, busQueries);
     });
-    /*
-     for_each(stopQueries.begin(), stopQueries.end(),
-                 [&](const auto &stop_query) {
-                     db_.AddStop(stop_query.name, stop_query.coordinates);
-                 });
-
-        for_each(stopQueries.begin(), stopQueries.end(),
-                 [&](const auto &stop_query) {
-                     db_.AddStopDistances(stop_query.name, std::move(stop_query.distances));
-                 });
-
-        for_each(busQueries.begin(), busQueries.end(),
-                 [&](const auto &bus_query) {
-                     db_.AddBus(bus_query.name, bus_query.is_annular, std::move(bus_query.stops));
-                 });
-     */
 }
 
 std::string RequestHandler::ExecuteStats(const std::deque<transport::domains::StatRequest> &statRequests,
                                          const transport::interfaces::IReader &reader) {
-    return reader.ConvertStatRequests(db_, statRequests, reader.GetRenderSettings());
+    return reader.ConvertStatRequests(db_, statRequests, reader.GetRenderSettings(), reader.GetRoutingSettings());
 }
 
 std::future<std::string>
 RequestHandler::ExecuteStatsAsync(const std::deque<transport::domains::StatRequest> &statRequests,
                                   const transport::interfaces::IReader &reader) {
     return std::async([&] {
-        return reader.ConvertStatRequests(db_, statRequests, reader.GetRenderSettings());
+        return reader.ConvertStatRequests(db_, statRequests, reader.GetRenderSettings(), reader.GetRoutingSettings());
     });
 }
 
@@ -108,10 +93,22 @@ RequestHandler::GetStopsWithRoute(const transport::catalogue::TransportCatalogue
 
 std::string RequestHandler::RenderMap(const transport::catalogue::TransportCatalogue &catalogue,
                                       renderer::MapRenderer::RenderSettings renderSettings) {
-    renderer::MapRenderer mapRenderer(renderSettings);
+    renderer::MapRenderer mapRenderer(std::move(renderSettings));
     std::ostringstream out;
     mapRenderer.Render(RequestHandler::GetStopsWithRoute(catalogue), out);
     return out.str();
+}
+
+std::optional<transport::router::TransportRouter::ResponseFindRoute>
+RequestHandler::FindRoute(const transport::catalogue::TransportCatalogue &catalogue,
+                          router::TransportRouter::RoutingSettings routingSettings,
+                          std::string_view stop_from, std::string_view stop_to) {
+    router::TransportRouter transportRouter(catalogue, routingSettings);
+    graph::DirectedWeightedGraph<double> directedWeightedGraph_(catalogue.GetStops().size());
+    transportRouter.CreateGraph(directedWeightedGraph_);
+    auto router = std::make_shared<graph::Router<double>>(directedWeightedGraph_);
+    transportRouter.SetRouter(router);
+    return transportRouter.FindRoute(stop_from, stop_to);
 }
 
 

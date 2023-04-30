@@ -2,6 +2,7 @@
 
 #include "domain.h"
 #include "transport_catalogue.h"
+#include "transport_router.h"
 
 #include <future>
 #include <map>
@@ -14,7 +15,8 @@ namespace transport::interfaces {
         [[nodiscard]] virtual std::string
         ConvertStatRequests(const transport::catalogue::TransportCatalogue &db,
                             const std::deque<transport::domains::StatRequest> &stats,
-                            renderer::MapRenderer::RenderSettings renderSettings) const = 0;
+                            std::optional<renderer::MapRenderer::RenderSettings> renderSettings,
+                            std::optional<transport::router::TransportRouter::RoutingSettings> routingSettings) const = 0;
 
         // getters
         [[nodiscard]] std::deque<transport::domains::StopQuery> GetStopQueries() const { return stopQueries; }
@@ -24,6 +26,9 @@ namespace transport::interfaces {
         [[nodiscard]] std::deque<transport::domains::StatRequest> GetStatRequests() const { return statRequests; }
 
         [[nodiscard]] renderer::MapRenderer::RenderSettings GetRenderSettings() const { return renderSettings; }
+
+        [[nodiscard]] transport::router::TransportRouter::RoutingSettings
+        GetRoutingSettings() const { return routingSettings; }
 
         // des
 
@@ -39,6 +44,10 @@ namespace transport::interfaces {
 
         // rendering
         renderer::MapRenderer::RenderSettings renderSettings;
+
+        //routing
+        transport::router::TransportRouter::RoutingSettings routingSettings;
+
     };
 }
 
@@ -71,6 +80,10 @@ namespace transport::handlers {
         static std::string RenderMap(const transport::catalogue::TransportCatalogue &catalogue,
                                      renderer::MapRenderer::RenderSettings renderSettings);
 
+        static std::optional<router::TransportRouter::ResponseFindRoute>
+        FindRoute(const transport::catalogue::TransportCatalogue &catalogue,
+                  transport::router::TransportRouter::RoutingSettings routingSettings,
+                  std::string_view stop_from, std::string_view stop_to);
 
     private:
         transport::catalogue::TransportCatalogue &db_;

@@ -95,7 +95,7 @@ namespace json {
         return ArrayBuilder(*this);
     }
 
-    Builder& Builder::Value(const Data& value) {
+    Builder& Builder::Value(const NodeValue& value) {
         switch (state_) {
             case state::START: {
                 steps_.push(std::make_unique<Node>(
@@ -198,7 +198,7 @@ namespace json {
     }
 
 
-    ArrayBuilder ArrayBuilder::Value(const Data& value) {
+    ArrayBuilder ArrayBuilder::Value(const NodeValue& value) {
         return ArrayBuilder(builder_.Value(value));
     }
 
@@ -224,7 +224,7 @@ namespace json {
     }
 
 
-    DictBuilder ValueBuilder::Value(const Data& value) {
+    DictBuilder ValueBuilder::Value(const NodeValue& value) {
         return DictBuilder(builder_.Value(value));
     }
 

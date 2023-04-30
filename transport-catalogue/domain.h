@@ -40,6 +40,25 @@ namespace transport::domains {
         std::vector<Bus *> buses;
     };
 
+    /*
+    namespace route::item {
+        struct Wait {
+            std::string stop_name;
+            double time;
+        };
+        struct Bus {
+            std::string bus_name;
+            int span_count;
+            double time;
+        };
+    }
+
+    struct RouteStat {
+        double total_time;
+        std::vector<std::variant<route::item::Wait, route::item::Bus>> items;
+    };
+    */
+
     // Utils
 
     const size_t PRIME_NUMBER = 37;
@@ -90,15 +109,20 @@ namespace transport::domains {
 
     class StatRequest {
     public:
+        using TwoStops = std::pair<std::string, std::string>;
+
         int id;
         std::string type;
-        std::string name;
+        std::variant<std::string, TwoStops> extra;
 
         explicit StatRequest(int id, std::string type, std::string name) :
                 id(id),
                 type(std::move(type)),
-                name(std::move(name)) {}
+                extra(std::move(name)) {}
 
+        explicit StatRequest(int id, std::string type, const std::string &from, const std::string &to) :
+                id(id),
+                type(std::move(type)),
+                extra(std::move(std::make_pair(from, to))) {}
     };
-
 }

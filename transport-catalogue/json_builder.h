@@ -22,7 +22,7 @@ namespace json {
         DictBuilder StartDict();
         ArrayBuilder StartArray();
 
-        Builder& Value(const Data& value);
+        Builder& Value(const NodeValue& value);
         Builder& EndDict();
         Builder& EndArray();
 
@@ -44,7 +44,7 @@ namespace json {
 
         }
 
-        ArrayBuilder Value(const Data& value);
+        ArrayBuilder Value(const NodeValue& value);
 
         DictBuilder StartDict();
 
@@ -81,7 +81,7 @@ namespace json {
 
         }
 
-        DictBuilder Value(const Data& value);
+        DictBuilder Value(const NodeValue& value);
 
         DictBuilder StartDict();
 

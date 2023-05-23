@@ -1,160 +1,65 @@
-#include <iostream>
-#include <fstream>
-
+﻿#include "domain.h"
 #include "json_reader.h"
 #include "request_handler.h"
 #include "transport_catalogue.h"
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <string_view>
 
 using namespace std;
 using namespace transport::catalogue;
-using namespace renderer;
+using namespace transport::response;
+using namespace json::reader;
 
-int main() {
-    istringstream input("  {\n"
-                        "      \"base_requests\": [\n"
-                        "          {\n"
-                        "              \"is_roundtrip\": true,\n"
-                        "              \"name\": \"297\",\n"
-                        "              \"stops\": [\n"
-                        "                  \"Biryulyovo Zapadnoye\",\n"
-                        "                  \"Biryulyovo Tovarnaya\",\n"
-                        "                  \"Universam\",\n"
-                        "                  \"Biryulyovo Zapadnoye\"\n"
-                        "              ],\n"
-                        "              \"type\": \"Bus\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"is_roundtrip\": false,\n"
-                        "              \"name\": \"635\",\n"
-                        "              \"stops\": [\n"
-                        "                  \"Biryulyovo Tovarnaya\",\n"
-                        "                  \"Universam\",\n"
-                        "                  \"Prazhskaya\"\n"
-                        "              ],\n"
-                        "              \"type\": \"Bus\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"latitude\": 55.574371,\n"
-                        "              \"longitude\": 37.6517,\n"
-                        "              \"name\": \"Biryulyovo Zapadnoye\",\n"
-                        "              \"road_distances\": {\n"
-                        "                  \"Biryulyovo Tovarnaya\": 2600\n"
-                        "              },\n"
-                        "              \"type\": \"Stop\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"latitude\": 55.587655,\n"
-                        "              \"longitude\": 37.645687,\n"
-                        "              \"name\": \"Universam\",\n"
-                        "              \"road_distances\": {\n"
-                        "                  \"Biryulyovo Tovarnaya\": 1380,\n"
-                        "                  \"Biryulyovo Zapadnoye\": 2500,\n"
-                        "                  \"Prazhskaya\": 4650\n"
-                        "              },\n"
-                        "              \"type\": \"Stop\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"latitude\": 55.592028,\n"
-                        "              \"longitude\": 37.653656,\n"
-                        "              \"name\": \"Biryulyovo Tovarnaya\",\n"
-                        "              \"road_distances\": {\n"
-                        "                  \"Universam\": 890\n"
-                        "              },\n"
-                        "              \"type\": \"Stop\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"latitude\": 55.611717,\n"
-                        "              \"longitude\": 37.603938,\n"
-                        "              \"name\": \"Prazhskaya\",\n"
-                        "              \"road_distances\": {},\n"
-                        "              \"type\": \"Stop\"\n"
-                        "          }\n"
-                        "      ],\n"
-                        "      \"render_settings\": {\n"
-                        "          \"bus_label_font_size\": 20,\n"
-                        "          \"bus_label_offset\": [\n"
-                        "              7,\n"
-                        "              15\n"
-                        "          ],\n"
-                        "          \"color_palette\": [\n"
-                        "              \"green\",\n"
-                        "              [\n"
-                        "                  255,\n"
-                        "                  160,\n"
-                        "                  0\n"
-                        "              ],\n"
-                        "              \"red\"\n"
-                        "          ],\n"
-                        "          \"height\": 200,\n"
-                        "          \"line_width\": 14,\n"
-                        "          \"padding\": 30,\n"
-                        "          \"stop_label_font_size\": 20,\n"
-                        "          \"stop_label_offset\": [\n"
-                        "              7,\n"
-                        "              -3\n"
-                        "          ],\n"
-                        "          \"stop_radius\": 5,\n"
-                        "          \"underlayer_color\": [\n"
-                        "              255,\n"
-                        "              255,\n"
-                        "              255,\n"
-                        "              0.85\n"
-                        "          ],\n"
-                        "          \"underlayer_width\": 3,\n"
-                        "          \"width\": 200\n"
-                        "      },\n"
-                        "      \"routing_settings\": {\n"
-                        "          \"bus_velocity\": 40,\n"
-                        "          \"bus_wait_time\": 6\n"
-                        "      },\n"
-                        "      \"stat_requests\": [\n"
-                        "          {\n"
-                        "              \"id\": 1,\n"
-                        "              \"name\": \"297\",\n"
-                        "              \"type\": \"Bus\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"id\": 2,\n"
-                        "              \"name\": \"635\",\n"
-                        "              \"type\": \"Bus\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"id\": 3,\n"
-                        "              \"name\": \"Universam\",\n"
-                        "              \"type\": \"Stop\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"from\": \"Biryulyovo Zapadnoye\",\n"
-                        "              \"id\": 4,\n"
-                        "              \"to\": \"Universam\",\n"
-                        "              \"type\": \"Route\"\n"
-                        "          },\n"
-                        "          {\n"
-                        "              \"from\": \"Biryulyovo Zapadnoye\",\n"
-                        "              \"id\": 5,\n"
-                        "              \"to\": \"Prazhskaya\",\n"
-                        "              \"type\": \"Route\"\n"
-                        "          }\n"
-                        "      ]\n"
-                        "  }\n"
-                        "  ");
+string ReadFile(const string &file_name) {
+    ifstream file(file_name, ios::binary | ios::ate);
+    const ifstream::pos_type end = file.tellg();
+    file.seekg(0, ios::beg);
 
-    ifstream file_in("input.json");
-    ofstream file_out("output.json");
+    string str(end, '\0');
+    file.read(&str[0], end);
+    return str;
+}
 
-    // main instance of TC
-    TransportCatalogue transportCatalogue;
+int main(int argc, const char *argv[]) {
+    if (argc != 2) {
+        cerr << "Usage: transport_catalogue [make_base|process_requests]\n"s;
+        return 5;
+    }
 
-    // reading data
-    JsonReader jsonReader;
-    jsonReader.Load(file_in);
+    const string_view mode(argv[1]);
 
-    // executing with handler
-    transport::handlers::RequestHandler requestHandler(transportCatalogue);
-    requestHandler.ExecuteQueries(jsonReader.GetStopQueries(), jsonReader.GetBusQueries());
-    const auto r = requestHandler.ExecuteStats(jsonReader.GetStatRequests(), jsonReader);
-    file_out << r;
+    const auto input_doc = json::Load(cin);
+    const auto &input_map = input_doc.GetRoot().AsMap();
 
+    if (mode == "make_base") {
+
+        std::vector<std::shared_ptr<Stop>> stops = json::reader::ParseStop(input_map.at("base_requests").AsArray());
+        std::vector<std::shared_ptr<Bus>> buses = json::reader::ParseBus(input_map.at("base_requests").AsArray());
+
+        TransportCatalogue mainBD(
+                stops,
+                buses,
+                json::reader::ParseRenderSetting(input_map.at("render_settings").AsMap()),
+                json::reader::ParseRouterSetting(input_map.at("routing_settings").AsMap())
+        );
+
+        const string &file_name = input_map.at("serialization_settings").AsMap().at("file").AsString();
+        ofstream file(file_name);
+        file << mainBD.Serialize();
+    } else if (mode == "process_requests") {
+
+        const string &file_name = input_map.at("serialization_settings").AsMap().at("file").AsString();
+
+        TransportCatalogue mainBD;
+        mainBD.Deserialize(ReadFile(file_name));
+
+        RequestHelper requests(mainBD, input_map.at("stat_requests").AsArray());
+        requests.GetResponses();
+        requests.PrintResponse(cout);
+
+    }
     return 0;
 }

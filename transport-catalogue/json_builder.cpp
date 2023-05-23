@@ -20,13 +20,12 @@ namespace json {
     Node Builder::Build() {
         if (state_ == state::FINISH) {
             return *steps_.top();
-        }
-        else {
+        } else {
             throw std::logic_error("building of unready node");
         }
     }
 
-    ValueBuilder Builder::Key(const std::string& key) {
+    ValueBuilder Builder::Key(const std::string &key) {
         switch (state_) {
             case state::START:
                 throw std::logic_error("empty node key add attempt");
@@ -34,8 +33,7 @@ namespace json {
             case state::CHANGE: {
                 if (steps_.top().get()->IsMap()) {
                     steps_.push(std::make_unique<Node>(key));
-                }
-                else {
+                } else {
                     throw std::logic_error(IsDictKeyTop() ? "dict key entered twice" : "not dict node key add attempt");
                 }
             }
@@ -59,8 +57,7 @@ namespace json {
             case state::CHANGE:
                 if (!steps_.top().get()->IsMap()) {
                     steps_.push(std::make_unique<Node>(Dict()));
-                }
-                else {
+                } else {
                     throw std::logic_error("start dict in another dict error");
                 }
                 break;
@@ -73,6 +70,7 @@ namespace json {
 
         return DictBuilder(*this);
     }
+
     ArrayBuilder Builder::StartArray() {
         switch (state_) {
             case state::START:
@@ -95,11 +93,11 @@ namespace json {
         return ArrayBuilder(*this);
     }
 
-    Builder& Builder::Value(const NodeValue& value) {
+    Builder &Builder::Value(const Data &value) {
         switch (state_) {
             case state::START: {
                 steps_.push(std::make_unique<Node>(
-                                    std::visit([](auto& value) {
+                                    std::visit([](auto &value) {
                                         return Node(value);
                                     }, value)
                             )
@@ -109,27 +107,26 @@ namespace json {
                 break;
             case state::CHANGE: {
                 if (steps_.top()->IsArray()) {
-                    json::Array tmp = std::move(steps_.top()->AsArray());
+                    json::Array tmp = steps_.top()->AsArray();
                     tmp.emplace_back(
-                            std::visit([](auto& value) {
+                            std::visit([](auto &value) {
                                 return Node(value);
                             }, value)
                     );
                     *steps_.top() = Node(std::move(tmp));
-                }
-                else if (IsDictKeyTop()) {
-                    std::string key = std::move(steps_.top()->AsString());
+                } else if (IsDictKeyTop()) {
+                    std::string key = steps_.top()->AsString();
                     steps_.pop();
-                    json::Dict dict = std::move(steps_.top().get()->AsMap());
-                    dict.insert({ key, std::visit([](auto& value) {
+                    json::Dict dict = steps_.top().get()->AsMap();
+                    dict.insert({key, std::visit([](auto &value) {
                         return Node(value);
-                    }, value) });
+                    }, value)});
                     *steps_.top() = Node(std::move(dict));
-                }
-                else {
+                } else {
                     throw std::logic_error("dict value without key add attempt");
                 }
-            } break;
+            }
+                break;
             case state::FINISH:
                 throw std::logic_error("ready node value add attempt");
                 break;
@@ -139,7 +136,7 @@ namespace json {
         return *this;
     }
 
-    Builder& Builder::EndDict() {
+    Builder &Builder::EndDict() {
         switch (state_) {
             case state::START:
                 throw std::logic_error("empty node end dict attempt");
@@ -148,17 +145,16 @@ namespace json {
                 if (steps_.top().get()->IsMap()) {
                     if (steps_.size() == 1) {
                         state_ = state::FINISH;
-                    }
-                    else {
-                        json::Dict value = std::move(steps_.top().get()->AsMap());
+                    } else {
+                        json::Dict value = steps_.top().get()->AsMap();
                         steps_.pop();
                         Value(value);
                     }
-                }
-                else {
+                } else {
                     throw std::logic_error(steps_.top()->IsString() ? "dict value expected" : "it is not a dict");
                 }
-            } break;
+            }
+                break;
             case state::FINISH:
                 throw std::logic_error("ready node end dict attempt");
                 break;
@@ -168,7 +164,7 @@ namespace json {
         return *this;
     }
 
-    Builder& Builder::EndArray() {
+    Builder &Builder::EndArray() {
         switch (state_) {
             case state::START:
                 throw std::logic_error("empty node end array attempt");
@@ -177,28 +173,27 @@ namespace json {
                 if (steps_.top()->IsArray()) {
                     if (steps_.size() == 1) {
                         state_ = state::FINISH;
-                    }
-                    else {
-                        json::Array value = std::move(steps_.top()->AsArray());
+                    } else {
+                        json::Array value = steps_.top()->AsArray();
                         steps_.pop();
                         Value(value);
                     }
-                }
-                else {
+                } else {
                     throw std::logic_error("non-array node end array attempt");
                 }
-            } break;
+            }
+                break;
             case state::FINISH:
                 throw std::logic_error("ready node end array attempt");
                 break;
             default:
-                throw std::logic_error("end aray common error");
+                throw std::logic_error("end array common error");
         }
         return *this;
     }
 
 
-    ArrayBuilder ArrayBuilder::Value(const NodeValue& value) {
+    ArrayBuilder ArrayBuilder::Value(const Data &value) {
         return ArrayBuilder(builder_.Value(value));
     }
 
@@ -210,21 +205,21 @@ namespace json {
         return builder_.StartArray();
     }
 
-    Builder& ArrayBuilder::EndArray() {
+    Builder &ArrayBuilder::EndArray() {
         return builder_.EndArray();
     }
 
 
-    ValueBuilder DictBuilder::Key(const std::string& key) {
+    ValueBuilder DictBuilder::Key(const std::string &key) {
         return builder_.Key(key);
     }
 
-    Builder& DictBuilder::EndDict() {
-        return  builder_.EndDict();
+    Builder &DictBuilder::EndDict() {
+        return builder_.EndDict();
     }
 
 
-    DictBuilder ValueBuilder::Value(const NodeValue& value) {
+    DictBuilder ValueBuilder::Value(const Data &value) {
         return DictBuilder(builder_.Value(value));
     }
 

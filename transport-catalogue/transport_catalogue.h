@@ -1,79 +1,72 @@
 #pragma once
 
 #include "domain.h"
+#include "geo.h"
+#include "json.h"
+#include "map_renderer.h"
+#include "transport_router.h"
 
+#include <algorithm>
+#include <cmath>
 #include <deque>
+#include <list>
+#include <map>
+#include <memory>
+#include <optional>
 #include <set>
-#include <stdexcept>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
-
+#include <utility>
+#include <vector>
 
 namespace transport::catalogue {
 
-    using BusSet = std::set<transport::domains::Bus *, transport::domains::BusCompare>;
+    using namespace transport::domains;
+    using namespace transport::render;
+    using namespace transport::router;
+
 
     class TransportCatalogue {
     public:
 
-        // Add data
+        TransportCatalogue() = default;
 
-        void AddStop(std::string name, geo::Coordinates coordinates);
+        TransportCatalogue(
+                std::vector<std::shared_ptr<Stop>> &stops,
+                std::vector<std::shared_ptr<Bus>> &buses,
+                const RenderSettings& render_settings,
+                RoutingSettings router_settings
+        );
 
-        void AddBus(const std::string &name, bool annular, const std::vector<std::string> &stops);
 
-        void AddStopDistances(std::string_view name, const std::vector<std::pair<std::string, int>> &distances);
+        ~TransportCatalogue() = default;
 
-        // Find data
+        std::optional<Stop> GetStopInfo(std::string_view stop_name);
 
-        const transport::domains::Stop *FindStop(std::string_view name) const;
+        std::optional<Bus> GetBusInfo(std::string_view bus_name);
 
-        const transport::domains::Bus *FindBus(std::string_view name) const;
+        std::shared_ptr<Stop> StopByName(std::string_view name);
 
-        // Calculating
+        std::shared_ptr<Bus> BusByName(std::string_view name);
 
-        int DistanceBetweenStops(std::string_view stop1, std::string_view stop2) const;
+        const std::string &GetMap();
 
-        int DistanceBetweenStops(transport::domains::Stop *stop1, transport::domains::Stop *stop2) const;
+        std::shared_ptr<std::vector<RouteItem>> findRouteInBase(std::string_view from, std::string_view to);
 
-        double RouteGeoLength(std::string_view name) const;
 
-        int RouteLength(std::string_view name) const;
+        [[nodiscard]] std::string Serialize() const;
 
-        // Getters
-
-        transport::domains::BusStat GetBusInfo(std::string_view name) const;
-
-        transport::domains::StopStat GetStopInfo(std::string_view name) const;
-
-        const std::unordered_map<std::string_view, transport::domains::Stop *> &GetStops() const;
-
-        const std::unordered_map<std::string_view, transport::domains::Bus *> &GetBuses() const;
-
-        const std::unordered_map<transport::domains::Stop *, BusSet> &GetStopBuses() const;
-
-        const std::unordered_map<std::pair<transport::domains::Stop *, transport::domains::Stop *>, int, transport::domains::TwoStopsHasher> &
-        GetDistances() const;
-
-        // Extra
-
-        void Clear();
-
-        [[nodiscard]] std::optional<transport::catalogue::BusSet> GetBusesByStop(const std::string_view stop_name) const;
+        void Deserialize(const std::string &data);
 
     private:
-        std::deque<transport::domains::Stop> stops_;
-        std::unordered_map<std::string_view, transport::domains::Stop *> stops_map_;
+        std::map<std::string_view, std::shared_ptr<Stop>> stops_;
+        std::map<std::string_view, std::shared_ptr<Bus>> buses_;
 
-        std::deque<transport::domains::Bus> buses_;
-        std::unordered_map<std::string_view, transport::domains::Bus *> buses_map_;
+        std::unique_ptr<MapRenderer> render_;
+        std::unique_ptr<TransportRouter> router_;
 
-        std::unordered_map<transport::domains::Stop *, BusSet> stop_buses_map_;
-        std::unordered_map<std::pair<transport::domains::Stop *, transport::domains::Stop *>, int, transport::domains::TwoStopsHasher> distances_;
-
-        void InsertBusesToStop(transport::domains::Bus *bus);
-
+        std::string map_;
     };
+
 }

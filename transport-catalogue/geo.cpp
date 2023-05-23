@@ -1,11 +1,19 @@
-#define _USE_MATH_DEFINES
-
 #include "geo.h"
-
 #include <cmath>
 
 namespace geo {
 
+    bool operator==(const Coordinates &lhs, const Coordinates &rhs) {
+        return lhs.lat == rhs.lat && lhs.lng == lhs.lng;
+    }
+
+    bool operator!=(const Coordinates &lhs, const Coordinates &rhs) {
+        return !(lhs == rhs);
+    }
+
+    bool operator<(const Coordinates &lhs, const Coordinates &rhs) {
+        return lhs.lat < rhs.lat || ((lhs.lat - rhs.lat) < EPSILON && (lhs.lng < rhs.lng));
+    }
 
     double ComputeDistance(Coordinates from, Coordinates to) {
         using namespace std;
@@ -18,4 +26,4 @@ namespace geo {
                * EARTH_RADIUS;
     }
 
-}  // namespace geo
+}

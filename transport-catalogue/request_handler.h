@@ -1,91 +1,57 @@
 #pragma once
 
-#include "domain.h"
+#include "json.h"
+#include "json_builder.h"
 #include "transport_catalogue.h"
 #include "transport_router.h"
 
-#include <future>
-#include <map>
+#include <string>
+#include <variant>
+#include <vector>
 
-namespace transport::interfaces {
-    class IReader {
-    public:
-        virtual void Load(std::istream &input) = 0;
+namespace transport::response {
 
-        [[nodiscard]] virtual std::string
-        ConvertStatRequests(const transport::catalogue::TransportCatalogue &db,
-                            const std::deque<transport::domains::StatRequest> &stats,
-                            std::optional<renderer::MapRenderer::RenderSettings> renderSettings,
-                            std::optional<transport::router::TransportRouter::RoutingSettings> routingSettings) const = 0;
+    using namespace transport::catalogue;
+    using namespace transport::router;
+    using namespace std::literals;
 
-        // getters
-        [[nodiscard]] std::deque<transport::domains::StopQuery> GetStopQueries() const { return stopQueries; }
-
-        [[nodiscard]] std::deque<transport::domains::BusQuery> GetBusQueries() const { return busQueries; }
-
-        [[nodiscard]] std::deque<transport::domains::StatRequest> GetStatRequests() const { return statRequests; }
-
-        [[nodiscard]] renderer::MapRenderer::RenderSettings GetRenderSettings() const { return renderSettings; }
-
-        [[nodiscard]] transport::router::TransportRouter::RoutingSettings
-        GetRoutingSettings() const { return routingSettings; }
-
-        // des
-
-        virtual ~IReader() = default;
-
-    protected:
-        // loading
-        std::deque<transport::domains::StopQuery> stopQueries;
-        std::deque<transport::domains::BusQuery> busQueries;
-
-        // stat
-        std::deque<transport::domains::StatRequest> statRequests;
-
-        // rendering
-        renderer::MapRenderer::RenderSettings renderSettings;
-
-        //routing
-        transport::router::TransportRouter::RoutingSettings routingSettings;
-
+    enum class RequestType {
+        STOP, BUS, MAP, ROUTER
     };
-}
 
-namespace transport::handlers {
-    class RequestHandler {
+    struct Request {
+        Request() = default;
+
+        int id = 0;
+        std::string name = ""s;
+        std::string from = ""s;
+        std::string to = ""s;
+        RequestType type;
+    };
+
+
+    class RequestHelper {
     public:
+        RequestHelper(TransportCatalogue &tc, const json::Array &stat_requests);
 
-        explicit RequestHandler(transport::catalogue::TransportCatalogue &db);
+        void GetResponses();
 
-        // adding, editing, loading data
-
-        void ExecuteQueries(const std::deque<transport::domains::StopQuery> &stopQueries,
-                            const std::deque<transport::domains::BusQuery> &busQueries);
-
-        std::future<void> ExecuteQueriesAsync(const std::deque<transport::domains::StopQuery> &stopQueries,
-                                              const std::deque<transport::domains::BusQuery> &busQueries);
-
-        std::string
-        ExecuteStats(const std::deque<transport::domains::StatRequest> &statRequests,
-                     const interfaces::IReader &reader);
-
-
-        std::future<std::string>
-        ExecuteStatsAsync(const std::deque<transport::domains::StatRequest> &statRequests,
-                          const interfaces::IReader &reader);
-
-        static renderer::GetCoordinateStops
-        GetStopsWithRoute(const transport::catalogue::TransportCatalogue &catalogue);
-
-        static std::string RenderMap(const transport::catalogue::TransportCatalogue &catalogue,
-                                     renderer::MapRenderer::RenderSettings renderSettings);
-
-        static std::optional<router::TransportRouter::ResponseFindRoute>
-        FindRoute(const transport::catalogue::TransportCatalogue &catalogue,
-                  transport::router::TransportRouter::RoutingSettings routingSettings,
-                  std::string_view stop_from, std::string_view stop_to);
+        void PrintResponse(std::ostream &out);
 
     private:
-        transport::catalogue::TransportCatalogue &db_;
+        TransportCatalogue &catalogue_;
+        std::vector<Request> requests_;
+        json::Array responses_;
+
+        static json::Node CreateJsonResponseError(int request_id);
+
+        static json::Node CreateJsonResponseStop(int request_id, const domains::Stop &data);
+
+        static json::Node CreateJsonResponseBus(int request_id, const domains::Bus &data);
+
+        static json::Node CreateJsonResponseMap(int request_id, const std::string &map_render_data);
+
+        static json::Node CreateJsonResponseRoute(int request_id, const std::shared_ptr<std::vector<RouteItem>> &route);
     };
+
 }

@@ -1,89 +1,121 @@
 #pragma once
 
-#include <string_view>
-#include <string>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <memory>
-
-#include "graph.h"
-#include "router.h"
-#include "transport_catalogue.h"
 #include "domain.h"
+#include "router.h"
+
+#include "transport_router.pb.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <ostream>
+#include <unordered_map>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <utility>
+#include <vector>
 
 namespace transport::router {
-    using namespace std::literals;
+
+    using namespace transport::domains;
+
+    using minutes = double;
+    using seconds = double;
+
+    using km_ch = double;
+    using m_c = double;
+
+
+    struct RoutingSettings {
+        RoutingSettings() = default;
+
+        RoutingSettings(minutes wait_time, km_ch velocity)
+                : bus_wait_time(wait_time * 60), bus_velocity(velocity / 3.6) {}
+
+        seconds bus_wait_time;
+        m_c bus_velocity;
+    };
+
+
+    struct RouteItem {
+        RouteItem() = default;
+
+        RouteItem(std::shared_ptr<Stop> start_stop,
+                  std::shared_ptr<Stop> finish_stop,
+                  std::shared_ptr<Bus> new_bus,
+                  int new_trip_stop_count,
+                  seconds new_trip_time,
+                  seconds new_wait_time
+        ) :
+                start_stop_idx(std::move(start_stop)),
+                finish_stop_idx(std::move(finish_stop)),
+                bus(std::move(new_bus)),
+                stop_count(new_trip_stop_count),
+                trip_time(new_trip_time),
+                wait_time(new_wait_time) {
+
+
+        }
+
+        std::shared_ptr<Stop> start_stop_idx = nullptr;
+        std::shared_ptr<Stop> finish_stop_idx = nullptr;
+        std::shared_ptr<Bus> bus = nullptr;
+
+        unsigned int stop_count = 0;
+        seconds trip_time = 0.0;
+        seconds wait_time = 0.0;
+    };
+
 
     class TransportRouter {
     public:
-        struct RoutingSettings {
-            int bus_wait_time_;
-            double bus_velocity_;
-        };
 
-        struct GraphInfoStops {
-            std::string_view bus_num;
-            std::string_view stop_from;
-            std::string_view stop_to;
-            double width = 0.0;
-            int span_count = 0;
-        };
+        TransportRouter(
+                std::map<std::string_view, std::shared_ptr<Stop>> &stops,
+                std::map<std::string_view, std::shared_ptr<Bus>> &buses,
+                RoutingSettings settings);
 
-        explicit TransportRouter(const transport::catalogue::TransportCatalogue &transportCatalogue,
-                                 TransportRouter::RoutingSettings RoutingSettings)
-                : RoutingSettings_(RoutingSettings), transportCatalogue_(transportCatalogue) {
-        }
+        void BuildGraph();
 
-        void CreateGraph(graph::DirectedWeightedGraph<double> &directedWeightedGraph);
+        const RoutingSettings &GetSettings() const;
 
-        std::set<const transport::domains::Bus *> FillGraphWithBuses();
+        std::shared_ptr<std::vector<RouteItem>> findRoute(std::string_view from, std::string_view to);
 
-        void FillGraphWithStops();
 
-        void
-        AddEdges(graph::DirectedWeightedGraph<double> &directedWeightedGraph, const GraphInfoStops &graphInfoStops);
+        void SerializeSettings(TCProto::RoutingSettings &proto) const;
 
-        struct DataBuild {
-            std::string bus_num_;
-            std::string stop_name_;
-            int span_count_ = 0;
-            double time_ = 0.0;
-            std::string type_;
-        };
+        static RoutingSettings DeserializeSettings(const TCProto::RoutingSettings &proto);
 
-        struct ResponseFindRoute {
-            double weight_ = 0.0;
-            std::vector<DataBuild> busnum;
-        };
 
-        std::optional<ResponseFindRoute> FindRoute(std::string_view stop_from, std::string_view stop_to) const;
+        void SerializeData(TCProto::TransportRouter &proto) const;
 
-        void SetRouter(std::shared_ptr<graph::Router<double>> router) {
-            router_ = std::move(router);
-        }
+        void DeserializeData(const TCProto::TransportRouter &proto);
 
     private:
+        const std::map<std::string_view, std::shared_ptr<Stop>> &stops_;
+        const std::map<std::string_view, std::shared_ptr<Bus>> &buses_;
+        const RoutingSettings settings_;
 
-        std::shared_ptr<graph::Router<double>> router_;
-        enum ItemType {
-            Bus,
-            Stop
-        };
+        graph::DirectedWeightedGraph<double> graph_;
+        std::unique_ptr<graph::Router<double>> search_in_graph_ = nullptr;
 
-        std::string GetItemType(ItemType item_type) const {
-            if (item_type == Bus)
-                return "Bus"s;
-            if (item_type == Stop)
-                return "Stop"s;
-            return "failed item type"s;
-        }
+        std::vector<RouteItem> graph_edges_;
+        std::unordered_map<std::shared_ptr<Stop>, size_t> graph_vertexes_;
 
-        const RoutingSettings RoutingSettings_;
-        const transport::catalogue::TransportCatalogue &transportCatalogue_;
+        void FillVertexes();
 
-        std::vector<GraphInfoStops> data_;
-        std::unordered_map<std::string, graph::VertexId> stop_name_vertex_id_;
+        void FillEdges();
     };
 
 }

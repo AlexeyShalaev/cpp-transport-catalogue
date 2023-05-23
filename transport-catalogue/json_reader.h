@@ -1,39 +1,31 @@
 #pragma once
 
-#include <string>
-#include <sstream>
-#include <optional>
-
+#include "domain.h"
+#include "geo.h"
 #include "json.h"
-#include "json_builder.h"
-#include "request_handler.h"
 #include "map_renderer.h"
+#include "request_handler.h"
+#include "svg.h"
+#include "transport_router.h"
 
-#include <deque>
+#include <map>
+#include <string>
+#include <vector>
 
-class JsonReader final : public transport::interfaces::IReader {
-public:
+namespace json::reader {
+    using namespace transport::domains;
+    using namespace transport::render;
+    using namespace transport::router;
+    using namespace transport::response;
 
-    explicit JsonReader();
+    std::vector<std::shared_ptr<Stop>> ParseStop(const json::Array &base_requests);
 
-    void Load(std::istream &input) override;
+    std::vector<std::shared_ptr<Bus>> ParseBus(const json::Array &base_requests);
 
-    [[nodiscard]] std::string
-    ConvertStatRequests(const transport::catalogue::TransportCatalogue &db,
-                        const std::deque<transport::domains::StatRequest> &stats,
-                        std::optional<renderer::MapRenderer::RenderSettings> renderSettings,
-                        std::optional<transport::router::TransportRouter::RoutingSettings> routingSettings) const override;
+    svg::Color ParseColor(const json::Node &node);
 
-private:
-    // загрузка данных из json
-    void ParseBase(const json::Node &node_);
+    transport::render::RenderSettings ParseRenderSetting(const json::Dict &render_settings);
 
-    void ParseStats(const json::Node &node_);
+    RoutingSettings ParseRouterSetting(const json::Dict &router_settings);
 
-    void ParseRenderSettings(const json::Node &node_);
-
-    void ParseRoutingSettings(const json::Node &node_);
-
-    static svg::Color GetColor(const json::Node &node);
-
-};
+}

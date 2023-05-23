@@ -10,85 +10,92 @@
 namespace json {
 
     class DictBuilder;
+
     class ArrayBuilder;
+
     class ValueBuilder;
 
     class Builder {
     public:
         Builder() = default;
+
         ~Builder();
 
-        ValueBuilder Key(const std::string& key);
+        ValueBuilder Key(const std::string &key);
+
         DictBuilder StartDict();
+
         ArrayBuilder StartArray();
 
-        Builder& Value(const NodeValue& value);
-        Builder& EndDict();
-        Builder& EndArray();
+        Builder &Value(const Data &value);
+
+        Builder &EndDict();
+
+        Builder &EndArray();
 
         void Clear();
+
         Node Build();
+
         bool IsDictKeyTop();
 
     private:
-        enum class state { START, CHANGE, FINISH };
+        enum class state {
+            START, CHANGE, FINISH
+        };
         state state_ = state::START;
         std::stack<std::unique_ptr<Node>> steps_;
     };
 
-
     class ArrayBuilder {
     public:
-        ArrayBuilder(Builder& builder_)
-                :builder_(builder_) {
+        explicit ArrayBuilder(Builder &builder_)
+                : builder_(builder_) {
 
         }
 
-        ArrayBuilder Value(const NodeValue& value);
+        ArrayBuilder Value(const Data &value);
 
         DictBuilder StartDict();
 
         ArrayBuilder StartArray();
 
-        Builder& EndArray();
+        Builder &EndArray();
 
     private:
-        Builder& builder_;
+        Builder &builder_;
     };
-
 
     class DictBuilder {
     public:
-        DictBuilder(Builder& builder_)
-                :builder_(builder_) {
+        explicit DictBuilder(Builder &builder_)
+                : builder_(builder_) {
 
         }
 
-        ValueBuilder Key(const std::string& key);
+        ValueBuilder Key(const std::string &key);
 
-        Builder& EndDict();
+        Builder &EndDict();
 
     private:
-        Builder& builder_;
+        Builder &builder_;
     };
-
-
 
     class ValueBuilder {
     public:
-        ValueBuilder(Builder& builder_)
-                :builder_(builder_) {
+        explicit ValueBuilder(Builder &builder_)
+                : builder_(builder_) {
 
         }
 
-        DictBuilder Value(const NodeValue& value);
+        DictBuilder Value(const Data &value);
 
         DictBuilder StartDict();
 
         ArrayBuilder StartArray();
 
     private:
-        Builder& builder_;
+        Builder &builder_;
     };
 
 }

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "map_renderer.proto";
+import "transport_router.proto";
+
+package TCProto;
+
+message RoadDistance {
+    string name = 1;
+    uint32 len = 2;
+}
+
+message Stop {
+    string name = 1;
+    double lat = 2;
+    double lng = 3;
+    repeated string bus_name = 4;
+    repeated RoadDistance road_distance = 5;
+}
+
+message Bus {
+    string name = 1;
+    bool is_round_trip = 2;
+    uint32 stop_count = 3;
+    uint32 unique_stop_count = 4;
+    double route_length = 5;
+    double curvature = 6;
+    repeated string stops_name = 7;
+}
+
+
+message TransportCatalogue {
+    repeated Stop map_stops = 1;
+    repeated Bus map_buses = 2;
+
+    string catalogue_map = 3;
+    RenderSettings renderer_settings = 4;
+
+    TransportRouter router = 5;
+    RoutingSettings routing_settings = 6;
+}
+

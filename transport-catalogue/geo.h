@@ -1,21 +1,17 @@
 #pragma once
 
+#include <cmath>
+
 namespace geo {
 
-    const int EARTH_RADIUS = 6371000;
+    const int EARTH_RADIUS = 6'371'000;
+    const double EPSILON = 1e-6;
 
     struct Coordinates {
-        double lat; // Широта
-        double lng; // Долгота
-        bool operator==(const Coordinates &other) const {
-            return lat == other.lat && lng == other.lng;
-        }
-
-        bool operator!=(const Coordinates &other) const {
-            return !(*this == other);
-        }
+        double lat;
+        double lng;
     };
 
     double ComputeDistance(Coordinates from, Coordinates to);
 
-}  // namespace geo
+}
